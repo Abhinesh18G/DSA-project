@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SHELL SORT</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-image: url('https://www.crio.do/blog/content/images/2022/02/Sorting-Algorithms.png');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      margin: 0;
+      padding: 0;
+      position: relative;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.55);
+      z-index: -1;
+    }
+
+    h1 {
+      color: #ffffff;
+      background: rgba(0, 0, 0, 0.6);
+      display: inline-block;
+      padding: 15px 40px;
+      border-radius: 12px;
+      margin-top: 25px;
+      letter-spacing: 2px;
+      font-size: 42px;
+      text-shadow: 2px 2px 6px black;
+    }
+
+    input {
+      padding: 8px;
+      width: 280px;
+      border: 2px solid #0ea5e9;
+      border-radius: 5px;
+      background: #f0f9ff;
+      margin-top: 15px;
+    }
+
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      background: #0284c7;
+      color: white;
+      cursor: pointer;
+      margin: 10px 5px;
+      font-weight: bold;
+      transition: 0.3s;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background: #0369a1;
+      transform: scale(1.05);
+    }
+
+    #container {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 10px;
+      height: 250px;
+      margin-top: 40px;
+      border-bottom: 2px solid #38bdf8;
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: 10px;
+      padding: 20px;
+      width: fit-content;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .bar {
+      width: 30px; /* ✅ Smaller bars */
+      background: #bae6fd;
+      border: 2px solid #0284c7;
+      border-radius: 4px 4px 0 0;
+      text-align: center;
+      color: #082f49;
+      font-weight: bold;
+      transition: all 0.5s;
+    }
+
+    .active { background: #f87171; }
+    .moving { background: #60a5fa; }
+    .sorted { background: #4ade80; }
+
+    #narration {
+      margin-top: 25px;
+      font-size: 18px;
+      color: #0c4a6e;
+      background: rgba(255, 255, 255, 0.95);
+      border: 2px solid #0284c7;
+      border-radius: 8px;
+      padding: 15px;
+      width: 70%;
+      margin-left: auto;
+      margin-right: auto;
+      font-weight: bold;
+      box-shadow: 0px 0px 10px rgba(0,0,0,0.3);
+    }
+  </style>
+</head>
+<body>
+  <h1>SHELL SORT</h1>
+
+  <div>
+    <input type="text" id="userInput" placeholder="Enter numbers like 25,12,45,8,20">
+  </div>
+
+  <div>
+    <button onclick="generateBars()">START</button>
+    <button id="nextBtn" onclick="nextStep()" disabled>NEXT</button>
+    <button id="autoBtn" onclick="toggleAutoPlay()" disabled>AUTO PLAY</button>
+  </div>
+
+  <div id="container"></div>
+
+  <div id="narration">Enter numbers and click START to begin visualization.</div>
+
+  <script>
+    const container = document.getElementById("container");
+    const narration = document.getElementById("narration");
+    const nextBtn = document.getElementById("nextBtn");
+    const autoBtn = document.getElementById("autoBtn");
+    let values = [];
+    let bars = [];
+    let steps = [];
+    let currentStep = 0;
+    let autoPlayInterval = null;
+
+    function tellStory(text) {
+      narration.innerText = text;
+    }
+
+    function generateBars() {
+      const input = document.getElementById("userInput").value;
+      if (!input.trim()) {
+        alert("Please enter some numbers!");
+        return;
+      }
+
+      values = input.split(",").map(x => parseInt(x.trim())).filter(x => !isNaN(x));
+      container.innerHTML = "";
+      bars = [];
+
+      for (let num of values) {
+        const bar = document.createElement("div");
+        bar.classList.add("bar");
+        bar.style.height = (num * 3) + "px";
+        bar.innerText = num;
+        container.appendChild(bar);
+        bars.push(bar);
+      }
+
+      tellStory("Bars created! Click NEXT or AUTO PLAY to start sorting.");
+      steps = createSteps([...values]);
+      currentStep = 0;
+      nextBtn.disabled = false;
+      autoBtn.disabled = false;
+    }
+
+    function createSteps(arr) {
+      const allSteps = [];
+      let n = arr.length;
+
+      for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
+        allSteps.push({ type: "gap", gap });
+        for (let i = gap; i < n; i++) {
+          let temp = arr[i];
+          let j = i;
+          allSteps.push({ type: "select", i, value: temp });
+
+          while (j >= gap && arr[j - gap] > temp) {
+            allSteps.push({ type: "move", from: j - gap, to: j, value: arr[j - gap] });
+            arr[j] = arr[j - gap];
+            j -= gap;
+          }
+
+          arr[j] = temp;
+          allSteps.push({ type: "insert", index: j, value: temp });
+        }
+      }
+      allSteps.push({ type: "done" });
+      return allSteps;
+    }
+
+    function nextStep() {
+      if (currentStep >= steps.length) {
+        tellStory("✅ Sorting complete! All bars are now sorted.");
+        nextBtn.disabled = true;
+        autoBtn.disabled = true;
+        bars.forEach(b => b.classList.add("sorted"));
+        clearInterval(autoPlayInterval);
+        return;
+      }
+
+      const step = steps[currentStep];
+      currentStep++;
+
+      bars.forEach(b => b.classList.remove("active", "moving"));
+
+      if (step.type === "gap") {
+        tellStory("Gap is now " + step.gap);
+      } else if (step.type === "select") {
+        bars[step.i].classList.add("active");
+        tellStory("Looking at " + step.value);
+      } else if (step.type === "move") {
+        bars[step.from].classList.add("moving");
+        bars[step.to].classList.add("moving");
+        tellStory("Move " + step.value + " from position " + step.from + " → " + step.to);
+        bars[step.to].style.height = (step.value * 3) + "px";
+        bars[step.to].innerText = step.value;
+      } else if (step.type === "insert") {
+        bars[step.index].classList.add("active");
+        bars[step.index].style.height = (step.value * 3) + "px";
+        bars[step.index].innerText = step.value;
+        tellStory("Placed " + step.value + " at position " + step.index);
+      } else if (step.type === "done") {
+        tellStory("All bars sorted!");
+        bars.forEach(b => b.classList.add("sorted"));
+        nextBtn.disabled = true;
+        autoBtn.disabled = true;
+        clearInterval(autoPlayInterval);
+      }
+    }
+
+    function toggleAutoPlay() {
+      if (autoPlayInterval) {
+        clearInterval(autoPlayInterval);
+        autoPlayInterval = null;
+        autoBtn.innerText = "RESUME";
+        tellStory("⏸ Paused auto play.");
+      } else {
+        autoBtn.innerText = "PAUSE";
+        tellStory("▶ Auto play started (slow mode).");
+        autoPlayInterval = setInterval(() => {
+          nextStep();
+        }, 1500); // ✅ Slow speed (1.5 seconds per step)
+      }
+    }
+  </script>
+</body>
+</html>
